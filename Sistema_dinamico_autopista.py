@@ -1,19 +1,21 @@
 import numpy as np
 
 class TrafficControlSystem:
-    def __init__(self, name, N0=100, t=1):
+    def __init__(self, name, N0=100, r_in=30, r_in_ecuation=300, t=1):
         self.name = name
         self.state = {
             "autos": N0,
             "historial": [N0]
         }
-        self.r_in = 30 # tasa de entrada
+        self.r_in = r_in # tasa de entrada
+        self.r_in_ecuation = r_in_ecuation
         self.k = 0.1 # coeficiente de salida proporcional
         self.t = t # paso de tiempo (minutos)
 
     def calcular_autos(self):
         # Ecuacion del sistema: 300-200e^(-0.1t)
-        return 300 - 200 * np.exp(-0.1*self.t)
+        # Ecuacion del sistema: 500-400e^(-0.1t)
+        return self.r_in_ecuation - (self.r_in_ecuation-100) * np.exp(-0.1*self.t)
 
     def update_state(self):
         N_nuevo = self.calcular_autos()
@@ -55,28 +57,34 @@ class TrafficControlSystem:
         return action
     
 if __name__ == "__main__":
+    # tasa de entrada de autos (autos/minuto)
+    r_in = 50
+    r_in_ecuation = r_in/0.1
+    r_in_min = r_in_ecuation*0.6
+    r_in_max = r_in_ecuation*0.95
+
     # Definicion de reglas
     traffic_rules = [
         {
-            "condicion": lambda estado: estado["autos"] < 200,
+            "condicion": lambda estado: estado["autos"] < r_in_min,
             "accion": "Entrada libre"
         },
         {
-            "condicion": lambda estado: 200 <= estado["autos"] < 280,
+            "condicion": lambda estado: r_in_min <= estado["autos"] < r_in_max,
             "accion": "Reducir entrada"
         },
         {
-            "condicion": lambda estado: estado["autos"] >= 280,
+            "condicion": lambda estado: estado["autos"] >= r_in_max,
             "accion": "Cerrar acceso"
         }
     ]
 
     # Creacion del sistema
     system_name = "Sistema de Control de Tráfico"
-    traffic_system = TrafficControlSystem(system_name, 100, 1)
+    traffic_system = TrafficControlSystem(system_name, 100, r_in, r_in_ecuation, 1)
 
     print("-------------------------------")
-    print(f"Ejecutando el {system_name}...\n")
+    print(f"Ejecutando el {system_name}, con una tasa de entrada de {r_in} autos\n")
 
     ciclos = 30  # cantidad de ciclos de simulación (media hora)
 
